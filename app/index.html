@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TapeOut Gate — the night desk for onchain agents</title>
+<!--
+  TapeOut Gate — Day-1 skeleton UI (9 Nov 2026).
+  Style: Cinematic / Film Noir (see design/DESIGN_CONSTITUTION.md).
+  Status: SKELETON. Wired to POST /api/gate on the local demo server.
+  Nothing here touches a chain. The banner says so until a deploy exists.
+  Performance: transform + opacity animations only; IntersectionObserver
+  reveals; prefers-reduced-motion + a Low-motion toggle disable motion.
+-->
+<style>
+  :root{
+    --ink:#e8e2d4; --dim:#9a937f; --bg:#0b0a08; --panel:#14120e;
+    --line:#3a332a; --amber:#e8a33d; --red:#e5484d; --green:#4cc38a;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--serif);line-height:1.6}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse 90% 55% at 50% -10%,
+      rgba(232,163,61,.14), transparent 60%);}
+  header,main,footer{max-width:880px;margin:0 auto;padding:0 20px}
+  .banner{margin:18px 0 0;padding:10px 14px;border:1px solid var(--amber);
+    color:var(--amber);font-family:var(--mono);font-size:13px}
+  .kicker{font-family:var(--mono);letter-spacing:.28em;text-transform:uppercase;
+    color:var(--dim);font-size:12px;margin:56px 0 12px}
+  h1{font-size:clamp(40px,7vw,72px);line-height:1.02;margin:0 0 16px;
+    font-weight:400}
+  h1 em{color:var(--amber);font-style:normal}
+  .lede{font-size:19px;color:var(--dim);max-width:60ch}
+  .lamp-row{display:flex;gap:10px;margin:28px 0}
+  .lamp{font-family:var(--mono);font-size:12px;letter-spacing:.14em;
+    padding:8px 14px;border:1px solid var(--line);border-radius:999px;
+    color:var(--dim)}
+  .lamp.on-amber{color:#0b0a08;background:var(--amber);border-color:var(--amber)}
+  .lamp.on-red{color:#fff;background:var(--red);border-color:var(--red)}
+  .lamp.on-green{color:#0b0a08;background:var(--green);border-color:var(--green)}
+  section{padding:48px 0;border-top:1px solid var(--line)}
+  h2{font-size:30px;font-weight:400;margin:0 0 12px}
+  label{display:block;font-family:var(--mono);font-size:12px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+    margin:18px 0 6px}
+  textarea,input[type=text]{width:100%;background:var(--panel);color:var(--ink);
+    border:1px solid var(--line);font-family:var(--mono);font-size:14px;
+    padding:12px;border-radius:2px}
+  textarea{min-height:150px;resize:vertical}
+  button{font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;
+    background:var(--amber);color:#0b0a08;border:0;padding:13px 22px;
+    font-size:13px;cursor:pointer;margin-top:18px}
+  button.ghost{background:transparent;color:var(--ink);
+    border:1px solid var(--line)}
+  #verdict{font-size:clamp(44px,9vw,84px);line-height:1;margin:8px 0;
+    letter-spacing:.02em}
+  #verdict .ch{display:inline-block}
+  #verdict.allow{color:var(--green)} #verdict.hold{color:var(--amber)}
+  #verdict.block{color:var(--red)}
+  pre{background:var(--panel);border:1px solid var(--line);padding:14px;
+    overflow:auto;font-size:13px;white-space:pre-wrap;word-break:break-word}
+  .reveal{opacity:0;transform:translateY(18px);
+    transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
+  #verdict .ch{opacity:0;transform:translateY(14px);
+    transition:opacity .45s ease,transform .45s ease}
+  #verdict.play .ch{opacity:1;transform:none}
+  footer{padding:32px 20px 64px;color:var(--dim);font-size:14px}
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .reveal,#verdict .ch{opacity:1;transform:none;transition:none}
+  }
+  body.low-motion .reveal,body.low-motion #verdict .ch{
+    opacity:1;transform:none;transition:none}
+</style>
+</head>
+<body>
+<header>
+  <p class="banner">DEMO — local gate only. Nothing onchain yet: no contract
+  deployed, no wallet connected, no transaction sent.</p>
+  <p class="kicker">OKX X Layer &middot; TapeOut Accelerate &middot; Developer tool</p>
+  <h1>The night desk<br>for <em>onchain agents.</em></h1>
+  <p class="lede">Before an agent&rsquo;s drafted call reaches a TapeOut circuit or
+  an X&nbsp;Layer contract, it crosses this desk. Secrets get stopped.
+  Destinations get checked. Every decision gets a receipt — and the receipt
+  gets logged onchain.</p>
+  <div class="lamp-row" id="lamps">
+    <span class="lamp" data-lamp="allow">ALLOW</span>
+    <span class="lamp" data-lamp="hold">HOLD</span>
+    <span class="lamp" data-lamp="block">BLOCK</span>
+  </div>
+  <p><button class="ghost" id="motionBtn" type="button">Low-motion: off</button></p>
+</header>
+<main>
+  <section class="reveal">
+    <h2>1 &mdash; Paste the draft call</h2>
+    <p>A contract-call payload, exactly as the agent drafted it. The gate
+    reads it, hashes it, and never sends the content anywhere.</p>
+    <label for="payload">Payload (JSON)</label>
+    <textarea id="payload">{
+  "to": "0x0000000000000000000000000000000000000000",
+  "value": "0",
+  "data": "0x",
+  "function": "ping()"
+}</textarea>
+    <br><button id="checkBtn" type="button">Run the gate</button>
+    <p style="font-size:14px;color:var(--dim)">The demo server allowlists
+    destinations with its <code>--allow</code> flag; with none set, every
+    clean payload HOLDs on "destination is on neither list" — the
+    fail-closed default.</p>
+  </section>
+  <section class="reveal">
+    <h2>2 &mdash; The verdict</h2>
+    <div id="verdict" aria-live="polite">—</div>
+    <p id="reason">No check run yet.</p>
+    <h2>3 &mdash; The receipt</h2>
+    <pre id="receipt">Run the gate to see the masked receipt and the prepared onchain record.</pre>
+  </section>
+  <section class="reveal">
+    <h2>What happens onchain</h2>
+    <p>Only three things ever leave this desk: the payload hash, the verdict,
+    and the receipt id. They are written to the <code>GateAudit</code>
+    contract on X&nbsp;Layer, and the destination is checked against the
+    <code>PolicyRegistry</code>. The payload itself — and any secret inside
+    it — stays offchain, in the receipt&rsquo;s masked form only.</p>
+    <p>Contract addresses: <strong>not deployed yet</strong>. They will appear
+    here, with explorer links, after the Week-2 testnet deploy.</p>
+  </section>
+</main>
+<footer>
+  TapeOut Gate — Day-1 skeleton. Scanner + policy ported from
+  hermes-secret-gate (42/42 tests) and CageCheck (10/10 tests); TapeOut /
+  X&nbsp;Layer integration is new. Free-only, no card, no keys in this repo.
+</footer>
+<script>
+(function(){
+  var btn=document.getElementById("motionBtn");
+  btn.addEventListener("click",function(){
+    var low=document.body.classList.toggle("low-motion");
+    btn.textContent="Low-motion: "+(low?"on":"off");
+  });
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+    document.body.classList.add("low-motion");
+    btn.textContent="Low-motion: on";
+  }
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target);} });
+  },{threshold:.12});
+  document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+
+  function setLamps(decision){
+    document.querySelectorAll("#lamps .lamp").forEach(function(l){ l.className="lamp"; });
+    var map={ALLOW:["allow","on-green"],HOLD:["hold","on-amber"],BLOCK:["block","on-red"]};
+    var m=map[decision];
+    if(m){ document.querySelector('[data-lamp="'+m[0]+'"]').classList.add(m[1]); }
+  }
+  function showVerdict(word){
+    var v=document.getElementById("verdict");
+    v.className=word.toLowerCase(); v.textContent="";
+    word.split("").forEach(function(ch,i){
+      var s=document.createElement("span"); s.className="ch"; s.textContent=ch;
+      s.style.transitionDelay=(i*45)+"ms"; v.appendChild(s);
+    });
+    requestAnimationFrame(function(){ v.classList.add("play"); });
+  }
+  document.getElementById("checkBtn").addEventListener("click",async function(){
+    var raw=document.getElementById("payload").value;
+    var receipt=document.getElementById("receipt");
+    var payload;
+    try{ payload=JSON.parse(raw); }
+    catch(e){ showVerdict("BLOCK"); setLamps("BLOCK");
+      document.getElementById("reason").textContent="Not valid JSON: "+e.message;
+      receipt.textContent="Fix the JSON and run the gate again."; return; }
+    receipt.textContent="Checking… (local gate, no network beyond this page)";
+    try{
+      var res=await fetch("/api/gate",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload)});
+      var out=await res.json();
+      showVerdict(out.decision); setLamps(out.decision);
+      document.getElementById("reason").textContent=out.reason||"";
+      receipt.textContent=JSON.stringify(out,null,2);
+    }catch(e){
+      showVerdict("HOLD"); setLamps("HOLD");
+      document.getElementById("reason").textContent=
+        "Local server unreachable — is app/server.py running? ("+e.message+")";
+      receipt.textContent="Start the demo server: python3 app/server.py";
+    }
+  });
+})();
+</script>
+</body>
+</html>
