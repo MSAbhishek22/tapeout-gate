@@ -19,7 +19,7 @@ is logged onchain.
 | TapeOut/X Layer integration layer (`app/tapeout.py`, `app/gate.py`) | Written, tested, **no chain contact yet** |
 | Contracts (`GateAudit.sol`, `PolicyRegistry.sol`) | Written, **NOT compiled, NOT deployed** (no solc/Foundry in sandbox) |
 | Front-end skeleton (Film Noir) + local demo server | Written, serves locally, talks to `/api/gate` |
-| GitHub repo | Not created (parent creates via live browser) |
+| GitHub repo | Created — this repo |
 | Vercel deploy | Not attempted (browser task) |
 | Submission | Not submitted — deadline 8 Dec 05:29 IST |
 
